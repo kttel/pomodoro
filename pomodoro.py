@@ -67,26 +67,30 @@ class App(QMainWindow):
         # show all sessions
         self.showing()
 
-        self.stop_session = self.findChild(QPushButton, "stop_session")
-        self.stop_session.clicked.connect(lambda: self.ses_return())
+        self.vert_timer = self.findChild(QVBoxLayout, "vertical_timer")
+        self.vert_task = self.findChild(QVBoxLayout, "vertical_task")
+        self.hor_buttons = self.findChild(QHBoxLayout, "horizontal_buttons")
 
-        self.start_timer = self.findChild(QPushButton, "start_timer")
-
+        # self.stop_session = self.findChild(QPushButton, "stop_session")
+        # self.stop_session.clicked.connect(lambda: self.ses_return())
+        #
+        # self.start_timer = self.findChild(QPushButton, "start_timer")
+        #
         self.music_flag = False
         self.start_audio = self.findChild(QPushButton, "start_audio")
         self.start_audio.clicked.connect(lambda: self.play_music())
-
-        self.add_task = self.findChild(QPushButton, "add_task")
-
-        self.task_frame = self.findChild(QLabel, "task_label")
-        self.task_frame.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.task_frame.setStyleSheet("color: #FFFFFF; font-family: 'Courier New';")
-        self.task_frame.setWordWrap(True)
-        self.task_text = self.findChild(QPlainTextEdit, "task_edit")
-        self.task_text.setPlainText('')
-        self.task_text.setPlaceholderText("Введіть поточне завдання")
-
-        self.box = self.findChild(QGroupBox, "groupBox_12")
+        #
+        # self.add_task = self.findChild(QPushButton, "add_task")
+        #
+        # self.task_frame = self.findChild(QLabel, "task_label")
+        # self.task_frame.setAlignment(Qt.AlignmentFlag.AlignTop)
+        # self.task_frame.setStyleSheet("color: #FFFFFF; font-family: 'Courier New';")
+        # self.task_frame.setWordWrap(True)
+        # self.task_text = self.findChild(QPlainTextEdit, "task_edit")
+        # self.task_text.setPlainText('')
+        # self.task_text.setPlaceholderText("Введіть поточне завдання")
+        #
+        # self.box = self.findChild(QGroupBox, "groupBox_12")
 
     def showing(self) -> None:
         # clearing for fast updating
@@ -168,7 +172,60 @@ class App(QMainWindow):
                 self.scroll_area.verticalScrollBar().minimum()
             )
 
-    def start_ses(self, ses_id: int) -> None:
+    def start_ses(self, ses_id: int, flag=False) -> None:
+        # clearing for fast updating
+        while self.vert_task.count() > 0:
+            self.vert_task.itemAt(0).widget().setParent(None)
+        while self.hor_buttons.count() > 0:
+            self.hor_buttons.itemAt(0).widget().setParent(None)
+
+        self.ses_period = QLabel()
+        self.ses_period.setObjectName(f"period_{ses_id}")
+        self.ses_period.setStyleSheet("color: #ffffff;")
+        self.ses_period.setMinimumHeight(30)
+
+        self.task_text = QLabel()
+        self.task_text.setObjectName(f"text_{ses_id}")
+        self.task_text.setWordWrap(True)
+        self.task_text.setStyleSheet("color: #ffffff;")
+        self.task_text.setMinimumHeight(80)
+        self.task_text.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        result = self.db.get_task(ses_id)
+        self.task_text.setText(result)
+
+        self.task_edit = QPlainTextEdit()
+        self.task_edit.setObjectName(f"edit_{ses_id}")
+        self.task_edit.setPlaceholderText("Введіть поточне завдання")
+        self.task_edit.setStyleSheet("background-color: #e2e2e2; border-radius: 5px;")
+        self.task_edit.setMinimumHeight(50)
+
+        self.vert_task.addWidget(self.ses_period)
+        self.vert_task.addWidget(self.task_text)
+        self.vert_task.addWidget(self.task_edit)
+
+        # adding buttons
+        self.ses_back = QPushButton()
+        self.ses_back.setText("Повернутись")
+        self.ses_back.clicked.connect(lambda: self.ses_return())
+        self.ses_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        self.start_timer = QPushButton()
+        self.start_timer.setObjectName(f"start_{ses_id}")
+        self.start_timer.setText("Почати")
+        # self.start_timer.clicked.connect()
+        self.start_timer.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        self.updating_task = QPushButton()
+        self.updating_task.setObjectName(f"start_{ses_id}")
+        self.updating_task.setText("Оновити завдання")
+        self.updating_task.clicked.connect(lambda ch, idx=self.updating_task.objectName().split("_")[1]:
+                                           self.update_task(int(idx)))
+        self.updating_task.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        self.hor_buttons.addWidget(self.ses_back)
+        self.hor_buttons.addWidget(self.start_timer)
+        self.hor_buttons.addWidget(self.updating_task)
 
         # converting data into a dict
         self.session_data = self.db.get_one(ses_id)
@@ -180,10 +237,10 @@ class App(QMainWindow):
         self.name_label.setStyleSheet("color: #ffffff; font-family: 'Courier New'; font-size: 14px")
 
         data_task = self.db.get_task(ses_id)
-        self.task_frame.setText(data_task)
+        #self.task_frame.setText(data_task)
 
-        self.btn_task = self.findChild(QPushButton, "add_task")
-        self.btn_task.clicked.connect(lambda ch, idx=self.dict_data['id']: self.update_task(idx))
+        #self.btn_task = self.findChild(QPushButton, "add_task")
+        #self.btn_task.clicked.connect(lambda ch, idx=self.dict_data['id']: self.update_task(idx))
         self.stacked.setCurrentIndex(indexes.c_timer)
 
     def ses_return(self):
@@ -193,12 +250,12 @@ class App(QMainWindow):
         self.stacked.setCurrentIndex(indexes.c_main)
 
     def update_task(self, ses_id: int):
-        task = self.task_text.toPlainText()
+        task = self.task_edit.toPlainText()
         print(f"'id {ses_id}: {task}'")
-        #self.db.update_task(ses_id, task)
-        #self.task_frame.setText(f"{task}")
+        self.db.update_task(ses_id, task)
+        self.start_ses(ses_id)
 
-        self.task_text.setPlainText('')
+        self.task_edit.setPlainText('')
 
     def play_music(self) -> None:
         if self.music_flag:
