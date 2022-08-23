@@ -68,7 +68,7 @@ class App(QMainWindow):
         self.showing()
 
         self.stop_session = self.findChild(QPushButton, "stop_session")
-        self.stop_session.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_main))
+        self.stop_session.clicked.connect(lambda: self.ses_return())
 
         self.start_timer = self.findChild(QPushButton, "start_timer")
 
@@ -186,6 +186,12 @@ class App(QMainWindow):
         self.btn_task.clicked.connect(lambda ch, idx=self.dict_data['id']: self.update_task(idx))
         self.stacked.setCurrentIndex(indexes.c_timer)
 
+    def ses_return(self):
+        if self.music_flag:
+            self.player.pause()
+            self.music_flag = False
+        self.stacked.setCurrentIndex(indexes.c_main)
+
     def update_task(self, ses_id: int):
         task = self.task_text.toPlainText()
         print(f"'id {ses_id}: {task}'")
@@ -207,7 +213,6 @@ class App(QMainWindow):
             self.audio_output.setVolume(0.5)
             self.player.play()
             self.music_flag = True
-
 
     def clearing(self) -> None:
         self.input_name.setText("")
