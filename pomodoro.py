@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, QUrl, QTimer, QPoint
 from designs import indexes
 from data import *
 import sys
+import notifications as nt
 
 
 class App(QMainWindow):
@@ -20,6 +21,7 @@ class App(QMainWindow):
         # widget attributes: stacked widget with all pages
         self.stacked = self.findChild(QStackedWidget, "stackedWidget")
         self.main_page = self.findChild(QWidget, "main_widget")
+        self.stacked.setCurrentIndex(indexes.c_menu)
 
         # buttons
         self.menu_start = self.findChild(QPushButton, "menu_start")
@@ -279,6 +281,7 @@ class App(QMainWindow):
             self.left -= 1
         else:
             self.timer_flag = 1 if self.timer_flag == 0 else 0
+            nt.Notification().send(self.timer_flag)
             self.left = freetime if self.timer_flag else worktime
             self.ses_period.setText("Працюйте!" if not self.timer_flag else "Відпочивайте!")
             self.show_current(ses_id)
@@ -290,6 +293,7 @@ class App(QMainWindow):
         self.only_timer(ses_id)
 
     def begin_work(self, ses_id: int) -> None:
+        nt.Notification().send(0)
         self.timer_started = True
         self.timer_data = list(map(int, self.db.get_time(ses_id).split()))
         self.reference = dict(zip(['work', 'free'], self.timer_data))
