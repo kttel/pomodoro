@@ -1,8 +1,8 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon, QCursor
+from PyQt6.QtGui import QIcon, QCursor, QTextCursor
 from PyQt6 import uic
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput, QSoundEffect
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtCore import Qt, QUrl, QTimer, QPoint
 from designs import indexes
 from data import *
 import sys
@@ -71,26 +71,11 @@ class App(QMainWindow):
         self.vert_task = self.findChild(QVBoxLayout, "vertical_task")
         self.hor_buttons = self.findChild(QHBoxLayout, "horizontal_buttons")
 
-        # self.stop_session = self.findChild(QPushButton, "stop_session")
-        # self.stop_session.clicked.connect(lambda: self.ses_return())
-        #
-        # self.start_timer = self.findChild(QPushButton, "start_timer")
-        #
         self.music_flag = False
         self.start_audio = self.findChild(QPushButton, "start_audio")
         self.start_audio.clicked.connect(lambda: self.play_music())
-        #
-        # self.add_task = self.findChild(QPushButton, "add_task")
-        #
-        # self.task_frame = self.findChild(QLabel, "task_label")
-        # self.task_frame.setAlignment(Qt.AlignmentFlag.AlignTop)
-        # self.task_frame.setStyleSheet("color: #FFFFFF; font-family: 'Courier New';")
-        # self.task_frame.setWordWrap(True)
-        # self.task_text = self.findChild(QPlainTextEdit, "task_edit")
-        # self.task_text.setPlainText('')
-        # self.task_text.setPlaceholderText("Введіть поточне завдання")
-        #
-        # self.box = self.findChild(QGroupBox, "groupBox_12")
+        self.timer_flag = 0
+        self.timer_started = False
 
     def showing(self) -> None:
         # clearing for fast updating
@@ -173,21 +158,30 @@ class App(QMainWindow):
             )
 
     def start_ses(self, ses_id: int, flag=False) -> None:
+        # converting data into a dict
+        self.session_data = self.db.get_one(ses_id)
+        key_values = ['id', 'name', 'date', 'worktime', 'freetime']
+        self.dict_data = dict(zip(key_values, *self.session_data))
+
+        self.ses_period = QLabel()
+        self.ses_period.setObjectName(f"period_{ses_id}")
+        self.ses_period.setStyleSheet("color: #ffffff; font-size: 16px; font-family: 'Courier New';")
+        self.ses_period.setMinimumHeight(30)
+        self.ses_period.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         # clearing for fast updating
         while self.vert_task.count() > 0:
             self.vert_task.itemAt(0).widget().setParent(None)
         while self.hor_buttons.count() > 0:
             self.hor_buttons.itemAt(0).widget().setParent(None)
 
-        self.ses_period = QLabel()
-        self.ses_period.setObjectName(f"period_{ses_id}")
-        self.ses_period.setStyleSheet("color: #ffffff;")
-        self.ses_period.setMinimumHeight(30)
+        if not flag:
+            self.only_timer(ses_id)
 
         self.task_text = QLabel()
         self.task_text.setObjectName(f"text_{ses_id}")
         self.task_text.setWordWrap(True)
-        self.task_text.setStyleSheet("color: #ffffff;")
+        self.task_text.setStyleSheet("color: #ffffff; padding: 2px;")
         self.task_text.setMinimumHeight(80)
         self.task_text.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -199,6 +193,7 @@ class App(QMainWindow):
         self.task_edit.setPlaceholderText("Введіть поточне завдання")
         self.task_edit.setStyleSheet("background-color: #e2e2e2; border-radius: 5px;")
         self.task_edit.setMinimumHeight(50)
+        self.task_edit.textChanged.connect(lambda: self.text_checking())
 
         self.vert_task.addWidget(self.ses_period)
         self.vert_task.addWidget(self.task_text)
@@ -213,7 +208,8 @@ class App(QMainWindow):
         self.start_timer = QPushButton()
         self.start_timer.setObjectName(f"start_{ses_id}")
         self.start_timer.setText("Почати")
-        # self.start_timer.clicked.connect()
+        self.start_timer.clicked.connect(lambda ch, idx=self.start_timer.objectName().split("_")[1]:
+                                           self.begin_work(int(idx)))
         self.start_timer.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
         self.updating_task = QPushButton()
@@ -227,35 +223,86 @@ class App(QMainWindow):
         self.hor_buttons.addWidget(self.start_timer)
         self.hor_buttons.addWidget(self.updating_task)
 
-        # converting data into a dict
-        self.session_data = self.db.get_one(ses_id)
-        key_values = ['id', 'name', 'date', 'worktime', 'freetime']
-        self.dict_data = dict(zip(key_values, *self.session_data))
-
         self.name_label = self.findChild(QLabel, "sesname")
         self.name_label.setText(self.dict_data['name'])
-        self.name_label.setStyleSheet("color: #ffffff; font-family: 'Courier New'; font-size: 14px")
+        self.name_label.setStyleSheet("color: #ffffff; font-family: 'Courier New'; font-size: 16px;"
+                                      "font-weight: bold;")
+        self.name_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        data_task = self.db.get_task(ses_id)
-        #self.task_frame.setText(data_task)
-
-        #self.btn_task = self.findChild(QPushButton, "add_task")
-        #self.btn_task.clicked.connect(lambda ch, idx=self.dict_data['id']: self.update_task(idx))
         self.stacked.setCurrentIndex(indexes.c_timer)
 
-    def ses_return(self):
+    def text_checking(self) -> None:
+        if len(self.task_edit.toPlainText()) >= 90:
+            self.task_edit.setPlainText(self.task_edit.toPlainText()[:-1])
+            dlg = QMessageBox(self)
+            dlg.setWindowTitle("Помилка введення")
+            dlg.setIcon(QMessageBox.Icon.Critical)
+            dlg.setText("Ви намагаєтесь додати занадто довге завдання!")
+            dlg.exec()
+
+    def ses_return(self) -> None:
         if self.music_flag:
             self.player.pause()
             self.music_flag = False
+        if self.timer_started:
+            self.main_timer.stop()
+            self.timer_started = False
         self.stacked.setCurrentIndex(indexes.c_main)
 
-    def update_task(self, ses_id: int):
-        task = self.task_edit.toPlainText()
-        print(f"'id {ses_id}: {task}'")
+    def update_task(self, ses_id: int) -> None:
+        task = self.task_edit.toPlainText() or "Немає завдань"
         self.db.update_task(ses_id, task)
         self.start_ses(ses_id)
-
         self.task_edit.setPlainText('')
+
+    def only_timer(self, ses_id: int) -> None:
+        while self.vert_timer.count() > 0:
+            self.vert_timer.itemAt(0).widget().setParent(None)
+        self.timer = QLabel()
+        self.timer.setObjectName(f"timer_{ses_id}")
+        self.timer.setStyleSheet("color: #121212; font-weight: bold; font-size: 50px;"
+                                 "font-family: 'Courier New'")
+        self.timer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # seconds_left
+        if not self.timer_started:
+            self.mins, self.seconds = self.dict_data['worktime'], 0
+        self.timer.setText(f"{self.mins:02}:{self.seconds:02}")
+        self.ses_period.setText("Роботу не почато" if not self.timer_started else
+                                "Працюйте!" if not self.timer_flag else "Відпочивайте!")
+
+        self.vert_timer.addWidget(self.timer)
+
+    def show_time(self, ses_id: int, worktime: int, freetime: int) -> None:
+        # worktime and freetime in seconds
+        if self.left > 0:
+            self.show_current(ses_id)
+            self.left -= 1
+        else:
+            self.timer_flag = 1 if self.timer_flag == 0 else 0
+            self.left = freetime if self.timer_flag else worktime
+            self.ses_period.setText("Працюйте!" if not self.timer_flag else "Відпочивайте!")
+            self.show_current(ses_id)
+
+    def show_current(self, ses_id: int) -> None:
+        self.total = self.left
+        self.mins = self.total // 60
+        self.seconds = self.total - self.mins * 60
+        self.only_timer(ses_id)
+
+    def begin_work(self, ses_id: int) -> None:
+        self.timer_started = True
+        self.timer_data = list(map(int, self.db.get_time(ses_id).split()))
+        self.reference = dict(zip(['work', 'free'], self.timer_data))
+        self.starting = [self.reference['work'] * 60, self.reference['free'] * 60]
+        self.left = self.starting[0] if not self.timer_flag else self.starting[1]
+
+        self.main_timer = QTimer()
+        self.main_timer.setObjectName(f"timer_{ses_id}")
+        self.main_timer.setInterval(1000)
+        self.main_timer.timeout.connect(lambda: self.show_time(ses_id, *self.starting))
+        self.main_timer.start()
+
+        self.left_seconds = self.reference
 
     def play_music(self) -> None:
         if self.music_flag:
