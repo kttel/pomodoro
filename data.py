@@ -24,6 +24,10 @@ class DB:
         self.cursor.execute(f"SELECT * FROM ses_list WHERE id = {ses_id}")
         return list(map(list, self.cursor.fetchall()))
 
+    def get_time(self, ses_id: int) -> str:
+        self.cursor.execute(f"SELECT time_work, time_free FROM ses_list WHERE id = {ses_id}")
+        return ''.join("{}".format(*self.cursor.fetchall()).strip('()').split(','))
+
     def get_task(self, ses_id: int) -> str:
         self.cursor.execute(f"SELECT statement FROM tasks where session_id = {ses_id}")
         result = self.cursor.fetchone()
