@@ -249,6 +249,7 @@ class App(QMainWindow):
         if self.timer_started:
             self.main_timer.stop()
             self.timer_started = False
+        self.timer_flag = 0
         self.stacked.setCurrentIndex(indexes.c_main)
 
     def update_task(self, ses_id: int) -> None:
