@@ -1,12 +1,4 @@
-from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon, QCursor, QTextCursor
-from PyQt6 import uic
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtCore import Qt, QUrl, QTimer, QPoint
-from designs import indexes
-from data import *
-import sys
-import notifications as nt
+from packages import *
 
 
 class App(QMainWindow):
@@ -39,13 +31,10 @@ class App(QMainWindow):
 
         # click processing
         self.menu_start.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_main))
-        self.menu_settings.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_settings))
         self.menu_exit.clicked.connect(lambda: self.close())
 
         self.main_back.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_menu))
         self.main_create.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_create))
-
-        self.settings_back.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_menu))
 
         self.create_back.clicked.connect(lambda: self.stacked.setCurrentIndex(indexes.c_main))
         self.create_clear.clicked.connect(lambda: self.clearing())
@@ -251,6 +240,7 @@ class App(QMainWindow):
             self.timer_started = False
         self.timer_flag = 0
         self.stacked.setCurrentIndex(indexes.c_main)
+        self.start_timer.setText("Почати")
 
     def update_task(self, ses_id: int) -> None:
         task = self.task_edit.toPlainText() or "Немає завдань"
@@ -294,6 +284,7 @@ class App(QMainWindow):
         self.only_timer(ses_id)
 
     def begin_work(self, ses_id: int) -> None:
+        self.start_timer.setText("Оновити")
         nt.Notification().send(0)
         self.timer_started = True
         self.timer_data = list(map(int, self.db.get_time(ses_id).split()))

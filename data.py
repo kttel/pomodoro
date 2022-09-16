@@ -37,11 +37,9 @@ class DB:
 
     def update_task(self, ses_id: int, text: str) -> None:
         if not self.get_task(ses_id):
-            print(f'INSERT INTO tasks (session_id, statement) VALUES ({ses_id}, \'{text}\')')
             self.cursor.execute(f'INSERT INTO tasks (session_id, statement) VALUES ({ses_id}, \'{text}\')')
             self.conn.commit()
         else:
-            print(f"UPDATE tasks SET statement = '{text}' WHERE session_id = {ses_id}")
             self.cursor.execute(f"UPDATE tasks SET statement = '{text}' WHERE session_id = {ses_id}")
             self.conn.commit()
 

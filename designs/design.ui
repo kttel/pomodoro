@@ -41,7 +41,7 @@
     <item row="0" column="0">
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="menu">
        <property name="enabled">
@@ -77,6 +77,9 @@
           <layout class="QGridLayout" name="gridLayout">
            <item row="0" column="1">
             <widget class="QWidget" name="widget_2" native="true">
+             <property name="accessibleName">
+              <string>description</string>
+             </property>
              <property name="styleSheet">
               <string notr="true">QWidget {
 	font-family: &quot;Courier New&quot;;
@@ -113,7 +116,32 @@ QLabel {
                  <enum>Qt::AutoText</enum>
                 </property>
                 <property name="alignment">
+                 <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_6">
+                <property name="font">
+                 <font>
+                  <family>Courier New</family>
+                  <pointsize>-1</pointsize>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">font-size: 14px;
+color: #ffffff;
+font-weight: normal;</string>
+                </property>
+                <property name="text">
+                 <string>The Pomodoro Technique is a time management method for students, perfectionists, and procrastinators of all kinds. </string>
+                </property>
+                <property name="alignment">
                  <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -130,22 +158,6 @@ QLabel {
                 </property>
                 <property name="text">
                  <string>Почати працювати</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="menu_settings">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="cursor">
-                 <cursorShape>PointingHandCursor</cursorShape>
-                </property>
-                <property name="text">
-                 <string>Налаштування</string>
                 </property>
                </widget>
               </item>
